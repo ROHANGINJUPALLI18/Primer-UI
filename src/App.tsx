@@ -1,42 +1,82 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react';
+import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
+import { OverviewView } from './views/OverviewView';
+import { CompetencyView } from './views/CompetencyView';
+import { RecommendationsView } from './views/RecommendationsView';
+import { QuizStudioView } from './views/QuizStudioView';
+import { AdminAnalyticsView } from './views/AdminAnalyticsView';
+import { type OfficialDetail, fetchOfficials, FALLBACK_OFFICIALS } from './services/api';
 
-function App() {
-  const queryClient = useQueryClient()
-  const { data: count = 0 } = useQuery({
-    queryKey: ['counter'],
-    queryFn: async () => 0,
-  })
+export function App() {
+  const [currentTab, setCurrentTab] = useState<string>('overview');
+  const [officials, setOfficials] = useState<OfficialDetail[]>(FALLBACK_OFFICIALS);
+  const [selectedOfficial, setSelectedOfficial] = useState<OfficialDetail>(FALLBACK_OFFICIALS[0]);
+  const [isBackendLive, setIsBackendLive] = useState<boolean>(false);
 
-  const increment = () => {
-    queryClient.setQueryData<number>(['counter'], (currentCount = 0) => currentCount + 1)
-  }
+  useEffect(() => {
+    async function loadData() {
+      const result = await fetchOfficials();
+      if (result.data && result.data.length > 0) {
+        setOfficials(result.data);
+        setSelectedOfficial(result.data[0]);
+      }
+      setIsBackendLive(result.isLive);
+    }
+    loadData();
+  }, []);
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 sm:px-10">
-      <section className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-5xl flex-col justify-center">
-        <p className="mb-4 text-sm font-semibold uppercase tracking-[0.28em] text-cyan-300">
-          Primmer UI
-        </p>
-        <h1 className="max-w-3xl text-5xl font-black tracking-tight text-white sm:text-7xl">
-          A clean foundation for thoughtful interfaces.
-        </h1>
-        <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
-          Tailwind utilities keep the visual language close to the component, while TanStack Query
-          provides the shared state boundary.
-        </p>
-        <div className="mt-10 flex flex-wrap items-center gap-4">
-          <button
-            type="button"
-            className="rounded-full bg-cyan-300 px-6 py-3 font-bold text-slate-950 transition hover:bg-cyan-200 focus:outline-2 focus:outline-offset-4 focus:outline-cyan-300"
-            onClick={increment}
-          >
-            Count is {count}
-          </button>
-          <span className="text-sm text-slate-400">Stored in the TanStack Query cache</span>
-        </div>
-      </section>
-    </main>
-  )
+    <div className="min-h-screen bg-[var(--mc-canvas)] text-[var(--mc-ink)] flex flex-col font-['Sofia_Sans',sans-serif]">
+      {/* Floating Pill Navigation */}
+      <Navbar
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
+        officials={officials}
+        selectedOfficial={selectedOfficial}
+        setSelectedOfficial={setSelectedOfficial}
+        isBackendLive={isBackendLive}
+      />
+
+      {/* Main Content Area: padded for floating navbar */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 sm:px-10 pt-32 pb-16">
+        {currentTab === 'overview' && (
+          <OverviewView 
+            official={selectedOfficial} 
+            setCurrentTab={setCurrentTab} 
+          />
+        )}
+
+        {currentTab === 'competencies' && (
+          <CompetencyView 
+            official={selectedOfficial} 
+            setCurrentTab={setCurrentTab} 
+          />
+        )}
+
+        {currentTab === 'recommendations' && (
+          <RecommendationsView 
+            official={selectedOfficial} 
+            setCurrentTab={setCurrentTab} 
+          />
+        )}
+
+        {currentTab === 'quiz' && (
+          <QuizStudioView 
+            official={selectedOfficial} 
+            setCurrentTab={setCurrentTab} 
+          />
+        )}
+
+        {currentTab === 'admin' && (
+          <AdminAnalyticsView />
+        )}
+      </main>
+
+      {/* Dark Mastercard Footer */}
+      <Footer />
+    </div>
+  );
 }
 
-export default App
+export default App;
